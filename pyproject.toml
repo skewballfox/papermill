@@ -1,0 +1,46 @@
+[project]
+name = "papermill"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Joshua Ferguson", email = "joshua.ferguson.273@gmail.com" },
+]
+dependencies = [
+    "qdrant-client>=1.12.2",
+    "sentence-transformers>=3.3.1",
+    "extractous>=0.3.0",
+    "pymupdf>=1.25.1",
+    "flpc>=0.2.5",
+    "fancy-dataclass>=0.7.4",
+    "cachetools>=5.5.0",
+]
+readme = "README.md"
+requires-python = ">= 3.12"
+
+[project.scripts]
+"papermill" = "papermill:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "mypy>=1.14.1",
+    "jupyter>=1.1.1",
+    "types-requests>=2.32.0.20241016",
+    "ruff>=0.9.1",
+    "types-cachetools>=5.5.0.20240820",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+
+[tool.mypy]
+#this shouldn't be experimental with python 3.12 and mypy>=1.12
+enable_incomplete_feature = "NewGenericSyntax"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/papermill"]

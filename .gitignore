@@ -1,0 +1,24 @@
+# python generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# venv
+.venv
+
+# config files
+*.json
+*.toml
+
+# exclude example config files
+!example_config.toml
+!pyproject.toml
+
+# throwaway jupyter notebooks
+tmp/
+
+# generated metadata
+data/

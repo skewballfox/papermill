@@ -1,0 +1,14 @@
+# example_config.toml
+
+# Path to the directory containing the books.
+books_path = "/path/to/books"
+
+# Path to the directory containing the papers.
+papers_path = "/path/to/papers"
+
+# Path to the directory containing generated metadata.
+# defaults to the root of the project for now.
+#metadata_path = "/path/to/metadata"
+
+# The qdrant client string, defaults to in memory.
+#client_param = ":memory:"
