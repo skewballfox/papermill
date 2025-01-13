@@ -10,7 +10,8 @@ and document the failures.
 from dataclasses import InitVar, dataclass, field
 from json import JSONEncoder
 from pathlib import Path
-from typing import Callable, List, Optional, Set, Sequence, Type
+from typing import Any, Callable, List, Optional, Set, Sequence, Type, TypeVar
+import warnings
 
 from fancy_dataclass import JSONDataclass
 
@@ -53,8 +54,28 @@ class OutlierData(JSONDataclass):
 supported_book_extensions = {".pdf", ".epub"}
 supported_paper_extensions = {".pdf"}
 
+Deserializable = TypeVar("Deserializable", bound=JSONDataclass)
+
+
 
 DataExtractor = Callable[[ExtractionHelper, Path], Optional[SourceType]]
+
+def deserialize_or_delete(file: Path, func: Callable[[Any], Deserializable]) -> Optional[Deserializable]:
+    with open(file) as f:
+        try:
+            return func(f)
+        except Exception as e:
+            warnings.warn(f"Failed to deserialize {file}, deleting it\nreason: {e}\n filecontent: {f.read()}")
+    file.unlink(missing_ok=True)  
+    return None
+
+def try_from_cache(file: Path, func: Callable[[Any], Deserializable]) -> Optional[Deserializable]:
+    if file.exists():
+        return deserialize_or_delete(file, func)
+    return None
+
+# @dataclass
+# MetaMiner(Generic[SourceType]):
 
 
 @dataclass
@@ -92,27 +113,28 @@ class MetadataHandler:
         outlier_path = self.config.metadata_path / "Outliers" / category
         category_path.mkdir(parents=True, exist_ok=True)
         outlier_path.mkdir(parents=True, exist_ok=True)
-
-        failed_extractors = set()
-        if (outlier_path / (file.stem + ".json")).exists():
-            with open(outlier_path / (file.stem + ".json")) as f:
-                outlier_data = OutlierData.from_json(f)
-            failed_extractors = set(outlier_data.extractors_attempted)
-        print(file.is_file(), file.suffix not in supported_extensions)
+        
+        # sanity check
         if not file.is_file() or file.suffix not in supported_extensions:
             return None
-        print(category_path / f"{file.stem}.json")
-        print((category_path / f"{file.stem}.json").exists())
-        if (category_path / f"{file.stem}.json").exists():
-            with open(category_path / f"{file.stem}.json") as f:
-                return document_type.from_json(f)
+        
+        if (doc_data:= try_from_cache(category_path / f"{file.stem}.json", document_type.from_json)):
+            return doc_data
+        
+        # get the list of previously failed extractors for a file, if any
+        failed_extractors = set()
+        if (outlier_data:= try_from_cache(outlier_path / (file.stem + ".json"), OutlierData.from_json)):
+            failed_extractors = set(outlier_data.extractors_attempted)
+        
         for extractor in extractors:
             if extractor.__name__ in failed_extractors:
                 continue
-            if (data := extractor(self.helper, file)) is not None:
+            # cache and return the data if the extractor is successful
+            if (data := extractor(self.helper, file)):
                 with open(category_path / f"{file.stem}.json", "w") as f:
                     data.to_json(f)
                 return data
+        # if we reach this point, save the failed extractors to the outlier file
         with open(outlier_path / f"{file.stem}.json", "w") as f:
             OutlierData(
                 file,
