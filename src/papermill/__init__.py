@@ -9,6 +9,7 @@ from papermill.config import Config, dev_config
 from papermill.metadata import MetadataHandler
 from os import environ
 
+
 def main() -> int:
     environ["TOKENIZERS_PARALLELISM"] = "false"
     config = dev_config()
@@ -25,6 +26,24 @@ def main() -> int:
             size=embedding_dims,  # Vector size is defined by used model
             distance=models.Distance.COSINE,
         ),
+    )
+    client.create_collection(
+        collection_name="my_papers",
+        vectors_config=models.VectorParams(
+            size=embedding_dims,  # Vector size is defined by used model
+            distance=models.Distance.COSINE,
+        ),
+    )
+    client.upload_points(
+        collection_name="my_papers",
+        points=[
+            models.PointStruct(
+                id=idx,
+                vector=encoder.encode(doc.abstract).tolist(),
+                payload=doc.__dict__,
+            )
+            for idx, doc in enumerate(metadata_extractor.papers)
+        ],
     )
 
     client.upload_points(
@@ -47,8 +66,6 @@ def main() -> int:
 
     for hit in hits:
         print(hit.payload, "score:", hit.score)
-
-
 
     print("Hello from papermill!")
     return 0

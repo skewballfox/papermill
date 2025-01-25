@@ -57,7 +57,7 @@ executing==2.1.0
     # via stack-data
 extractous==0.3.0
     # via papermill
-fancy-dataclass==0.7.4
+fancy-dataclass==0.8.1
     # via papermill
 fastjsonschema==2.21.1
     # via nbformat
@@ -423,3 +423,5 @@ websocket-client==1.8.0
     # via jupyter-server
 widgetsnbextension==4.0.13
     # via ipywidgets
+xmltodict==0.14.2
+    # via papermill

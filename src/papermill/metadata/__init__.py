@@ -18,6 +18,7 @@ from fancy_dataclass import JSONDataclass
 from papermill import Config
 from papermill.metadata.backup import backup_book_search
 from papermill.metadata.isbn import search_isbn
+from papermill.metadata.arxiv import search_arxiv_id
 from papermill.metadata.base import ExtractionHelper, BookData, PaperData, SourceType
 
 
@@ -57,22 +58,30 @@ supported_paper_extensions = {".pdf"}
 Deserializable = TypeVar("Deserializable", bound=JSONDataclass)
 
 
-
 DataExtractor = Callable[[ExtractionHelper, Path], Optional[SourceType]]
 
-def deserialize_or_delete(file: Path, func: Callable[[Any], Deserializable]) -> Optional[Deserializable]:
+
+def deserialize_or_delete(
+    file: Path, func: Callable[[Any], Deserializable]
+) -> Optional[Deserializable]:
     with open(file) as f:
         try:
             return func(f)
         except Exception as e:
-            warnings.warn(f"Failed to deserialize {file}, deleting it\nreason: {e}\n filecontent: {f.read()}")
-    file.unlink(missing_ok=True)  
+            warnings.warn(
+                f"Failed to deserialize {file}, deleting it\nreason: {e}\n filecontent: {f.read()}"
+            )
+    file.unlink(missing_ok=True)
     return None
 
-def try_from_cache(file: Path, func: Callable[[Any], Deserializable]) -> Optional[Deserializable]:
+
+def try_from_cache(
+    file: Path, func: Callable[[Any], Deserializable]
+) -> Optional[Deserializable]:
     if file.exists():
         return deserialize_or_delete(file, func)
     return None
+
 
 # @dataclass
 # MetaMiner(Generic[SourceType]):
@@ -89,7 +98,9 @@ class MetadataHandler:
         ],
     )
     paper_extractors: List[DataExtractor[PaperData]] = field(
-        default_factory=lambda: [],
+        default_factory=lambda: [
+            search_arxiv_id,
+        ],
     )
 
     def _get_metadata(
@@ -113,24 +124,28 @@ class MetadataHandler:
         outlier_path = self.config.metadata_path / "Outliers" / category
         category_path.mkdir(parents=True, exist_ok=True)
         outlier_path.mkdir(parents=True, exist_ok=True)
-        
+
         # sanity check
         if not file.is_file() or file.suffix not in supported_extensions:
             return None
-        
-        if (doc_data:= try_from_cache(category_path / f"{file.stem}.json", document_type.from_json)):
+
+        if doc_data := try_from_cache(
+            category_path / f"{file.stem}.json", document_type.from_json
+        ):
             return doc_data
-        
+
         # get the list of previously failed extractors for a file, if any
         failed_extractors = set()
-        if (outlier_data:= try_from_cache(outlier_path / (file.stem + ".json"), OutlierData.from_json)):
+        if outlier_data := try_from_cache(
+            outlier_path / (file.stem + ".json"), OutlierData.from_json
+        ):
             failed_extractors = set(outlier_data.extractors_attempted)
-        
+
         for extractor in extractors:
             if extractor.__name__ in failed_extractors:
                 continue
             # cache and return the data if the extractor is successful
-            if (data := extractor(self.helper, file)):
+            if data := extractor(self.helper, file):
                 with open(category_path / f"{file.stem}.json", "w") as f:
                     data.to_json(f)
                 return data
@@ -156,8 +171,8 @@ class MetadataHandler:
             if data := self.get_book(book):
                 yield data
 
-    def get_papers(self):
+    @property
+    def papers(self):
         for paper in self.config.papers_path.iterdir():
-            if paper.suffix not in supported_paper_extensions:
-                continue
-            yield self.get_paper(paper)
+            if data := self.get_paper(paper):
+                yield data

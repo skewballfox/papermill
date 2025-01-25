@@ -24,7 +24,7 @@ charset-normalizer==3.4.1
     # via requests
 extractous==0.3.0
     # via papermill
-fancy-dataclass==0.7.4
+fancy-dataclass==0.8.1
     # via papermill
 filelock==3.16.1
     # via huggingface-hub
@@ -177,3 +177,5 @@ typing-extensions==4.12.2
 urllib3==2.3.0
     # via qdrant-client
     # via requests
+xmltodict==0.14.2
+    # via papermill

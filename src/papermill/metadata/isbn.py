@@ -13,9 +13,10 @@ isbn10or13 = flpc.compile(
     flags=0,
 )
 
+google_books_isbn_api = "https://www.googleapis.com/books/v1/volumes?q=isbn:"
+
 
 def search_isbn(helper: ExtractionHelper, book_path: Path) -> Optional["BookData"]:
-    google_books_isbn_api = "https://www.googleapis.com/books/v1/volumes?q=isbn:"
     book_text = helper.get_text(book_path)
     for isbn in flpc.findall(isbn10or13, book_text):
         with request.urlopen(google_books_isbn_api + isbn) as response:
@@ -31,6 +32,6 @@ def search_isbn(helper: ExtractionHelper, book_path: Path) -> Optional["BookData
                     isbn=tmp["industryIdentifiers"][0]["identifier"],
                     description=tmp["description"],
                     published_date=tmp["publishedDate"],
-                    authors=tmp["authors"]
+                    authors=tmp["authors"],
                 )
     return None
