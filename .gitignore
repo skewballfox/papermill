@@ -8,6 +8,8 @@ wheels/
 
 # venv
 .venv
+# workspace specific files
+.vscode
 
 # config files
 *.json
@@ -22,3 +24,7 @@ tmp/
 
 # generated metadata
 data/
+
+# my venv folder on Windows - Jacob
+.env
+
